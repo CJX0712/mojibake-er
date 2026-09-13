@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>乱码急诊室 · Mojibake ER</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#fff; --ink:#111827; --ink2:#4b5563; --ink3:#9ca3af;
+    --line:#e5e7eb; --line2:#f0f1f3;
+    --acc:#0d9488; --acc-soft:#ecfdf5;
+    --red:#dc2626; --red-soft:#fef2f2;
+    --amber:#d97706; --amber-soft:#fffbeb;
+    --green:#059669; --green-soft:#ecfdf5;
+    --blue:#2563eb; --blue-soft:#eff6ff;
+    --violet:#7c3aed; --violet-soft:#f5f3ff;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+    font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1220px;margin:0 auto;padding:28px 22px 80px}
+  header.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+  header.top h1{font-size:23px;margin:0;letter-spacing:-.2px}
+  header.top .tag{color:var(--ink2);font-size:13px;margin:0}
+  header.top .gh{margin-left:auto;font-size:12px;color:var(--ink3)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden}
+  .card-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line2);background:#fcfcfd;flex-wrap:wrap}
+  .card-h h2{font-size:14px;margin:0;font-weight:600}
+  .card-h .hint{font-size:12px;color:var(--ink3);font-weight:400}
+  .card-h .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .card-b{padding:16px}
+
+  textarea{width:100%;min-height:132px;resize:vertical;padding:12px 13px;
+    border:1px solid var(--line);border-radius:9px;background:#fdfdfe;color:var(--ink);
+    font:13px/1.75 var(--mono);outline:none}
+  textarea:focus{border-color:var(--acc);background:#fff}
+  .drop.over textarea{border-color:var(--acc);background:var(--acc-soft)}
+
+  .row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px}
+  .row label{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2)}
+  .row .spacer{flex:1}
+  select,input[type=number]{border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12.5px;background:#fff;color:var(--ink);outline:none}
+  button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:7px 13px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.12s}
+  button:hover{border-color:#cbd5e1;background:#f9fafb}
+  button.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:500}
+  button.primary:hover{background:#0f766e;border-color:#0f766e}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .err{color:var(--red);font-size:12.5px;margin-top:10px;min-height:18px}
+
+  .samples{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .samples button{padding:5px 10px;font-size:12px;border-radius:20px}
+  .samples button.on{background:var(--acc-soft);border-color:#99f6e4;color:#0f766e}
+
+  /* 症状 */
+  .sym{display:flex;gap:10px;padding:11px 13px;border-radius:9px;border:1px solid var(--line);background:#fcfcfd;margin-bottom:9px}
+  .sym .ic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:700;flex:0 0 auto}
+  .sym.bad .ic{background:var(--red-soft);color:var(--red)}
+  .sym.warn .ic{background:var(--amber-soft);color:var(--amber)}
+  .sym.ok .ic{background:var(--green-soft);color:var(--green)}
+  .sym .tt{font-weight:600;font-size:13px}
+  .sym .dd{font-size:12px;color:var(--ink2);margin-top:2px}
+
+  /* 候选结果 */
+  .cand{border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:11px;background:#fff}
+  .cand.best{border-color:#5eead4;background:linear-gradient(180deg,#f0fdfa,#fff)}
+  .cand-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px}
+  .score{font:600 14px var(--mono);font-variant-numeric:tabular-nums}
+  .bar{height:5px;border-radius:3px;background:var(--line2);overflow:hidden;margin-bottom:9px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#14b8a6,#0d9488)}
+  .out{font:13px/1.8 var(--mono);background:#fbfbfc;border:1px solid var(--line2);border-radius:8px;padding:11px 13px;
+       white-space:pre-wrap;word-break:break-all;max-height:220px;overflow:auto}
+  .chain{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11.5px;margin-top:9px}
+  .chain .step{background:#f6f7f9;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-family:var(--mono)}
+  .chain .ar{color:var(--ink3)}
+  .chain .op{color:var(--acc);font-weight:600}
+
+  .badge{font-size:10.5px;padding:1.5px 6px;border-radius:5px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+  .b-ok{background:var(--green-soft);color:var(--green)}
+  .b-warn{background:var(--amber-soft);color:var(--amber)}
+  .b-bad{background:var(--red-soft);color:var(--red)}
+  .b-info{background:var(--blue-soft);color:var(--blue)}
+
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
+  th{color:var(--ink3);font-weight:600;font-size:11.5px;background:#fcfcfd}
+  td.mono{font-family:var(--mono);font-size:11.5px}
+  .scroll{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:9px}
+
+  .hex{font:12px/1.85 var(--mono);white-space:pre;overflow:auto;max-height:300px;padding:12px;
+       background:#fbfbfc;border:1px solid var(--line);border-radius:9px}
+  .hex .off{color:var(--ink3)}
+  .hex .b{color:#1f2937}
+  .hex .hi{background:#fef08a;border-radius:2px}
+  .hex .asc{color:var(--ink3)}
+
+  .note{font-size:12px;color:var(--ink2);background:#fafafb;border-left:3px solid var(--line);padding:9px 12px;border-radius:0 7px 7px 0;margin-bottom:12px}
+  .note.warn{border-left-color:var(--amber);background:var(--amber-soft);color:#78350f}
+  .note.ok{border-left-color:var(--green);background:var(--green-soft);color:#065f46}
+  .empty{color:var(--ink3);font-size:12.5px;padding:6px 0}
+
+  pre.rep{margin:0;padding:14px;background:#fbfbfc;border:1px solid var(--line);border-radius:9px;
+    font:12px/1.7 var(--mono);color:#1f2937;overflow:auto;max-height:420px;white-space:pre}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+  .kv{font-size:12px;color:var(--ink2)}
+  .kv b{color:var(--ink);font-weight:600;font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>乱码急诊室</h1>
+    <p class="tag">Mojibake ER · 把一段乱码倒推回它本来是什么字</p>
+    <span class="gh">单文件 · 零依赖 · 离线运行</span>
+  </header>
+
+  <section class="card">
+    <div class="card-h"><h2>1 · 接诊</h2><span class="hint">文本全部在本机内存里处理，不联网、不上传</span></div>
+    <div class="card-b">
+      <div class="drop" id="drop">
+        <textarea id="raw" spellcheck="false" placeholder="把乱码粘到这里，或者把文本文件拖进来&#10;&#10;例如：&#10;锟斤拷锟斤拷&#10;æµ‹è¯•&#10;ä¸­æ–‡"></textarea>
+      </div>
+      <div class="samples" id="samples"></div>
+      <div class="row">
+        <label>目标语言
+          <select id="lang">
+            <option value="auto">自动判断</option>
+            <option value="zh">中文</option>
+            <option value="ja">日文</option>
+            <option value="ko">韩文</option>
+            <option value="ru">西里尔文</option>
+            <option value="other">其它 / 西欧</option>
+          </select>
+        </label>
+        <label>链路深度
+          <select id="depth">
+            <option value="1">只看 1 步</option>
+            <option value="2" selected>最多 2 步</option>
+            <option value="3">最多 3 步</option>
+          </select>
+        </label>
+        <span class="spacer"></span>
+        <button id="btnFile">选择文件</button>
+        <input type="file" id="file" hidden>
+        <button id="btnClear">清空</button>
+        <button id="btnRun" class="primary">开始诊断</button>
+      </div>
+      <div class="err" id="ioErr"></div>
+    </div>
+  </section>
+
+  <div id="out" hidden>
+    <section class="card">
+      <div class="card-h"><h2>2 · 症状</h2><span class="hint" id="symHint"></span></div>
+      <div class="card-b" id="symBox"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>3 · 诊断结果</h2><span class="hint" id="resHint"></span>
+        <span class="right"><button id="btnCopy">复制最佳结果</button></span>
+      </div>
+      <div class="card-b" id="candBox"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>4 · 病因：乱码是怎么来的</h2><span class="hint">从原文到乱码的每一步，字节都经历了什么</span></div>
+      <div class="card-b" id="causeBox"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>5 · 字节解剖</h2><span class="hint">同一个字节在不同编码下的解释</span>
+        <span class="right">
+          <select id="hexEnc"></select>
+          <button id="btnHexCopy">复制 hex</button>
+        </span>
+      </div>
+      <div class="card-b" id="hexBox"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>6 · 手动修复</h2><span class="hint">自己指定「用 A 编码回字节，再按 B 解码」</span></div>
+      <div class="card-b">
+        <div class="row" style="margin-top:0">
+          <label>把当前文本按 <select id="mFrom"></select> 编码成字节</label>
+          <span style="color:var(--ink3)">→</span>
+          <label>再把字节按 <select id="mTo"></select> 解码</label>
+        </div>
+        <div class="grid2" style="margin-top:12px">
+          <div><div class="kv" style="margin-bottom:5px">中间字节</div><div class="hex" id="mBytes"></div></div>
+          <div><div class="kv" style="margin-bottom:5px">结果</div><div class="out" id="mOut"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>7 · 报告</h2><span class="right"><button id="btnReport">下载 Markdown</button></span></div>
+      <div class="card-b"><div class="note" id="repNote">报告含症状、候选修复方案、编码链与字节证据。</div></div>
+    </section>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Mojibake ER · 乱码急诊室
+   单文件、零依赖、离线。编码转换全部依赖浏览器的 Encoding API。
+   ============================================================ */
+
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ============================================================
+   1. 编码表
+   ============================================================ */
+const ENC = [
+  { id:'utf-8',        label:'UTF-8',            kind:'uni' },
+  { id:'utf-16le',     label:'UTF-16LE',         kind:'u16' },
+  { id:'utf-16be',     label:'UTF-16BE',         kind:'u16' },
+  { id:'gb18030',      label:'GB18030（简体）',   kind:'db', lead:[[0x81,0xFE]], trail:[[0x40,0xFE]] },
+  { id:'gbk',          label:'GBK（简体）',       kind:'db', lead:[[0x81,0xFE]], trail:[[0x40,0xFE]] },
+  { id:'big5',         label:'Big5（繁体）',      kind:'db', lead:[[0xA1,0xF9]], trail:[[0x40,0x7E],[0xA1,0xFE]] },
+  { id:'shift_jis',    label:'Shift_JIS（日文）', kind:'db', lead:[[0x81,0x9F],[0xE0,0xFC]], trail:[[0x40,0xFC]] },
+  { id:'euc-jp',       label:'EUC-JP（日文）',    kind:'db', lead:[[0xA1,0xFE]], trail:[[0xA1,0xFE]] },
+  { id:'euc-kr',       label:'EUC-KR（韩文）',    kind:'db', lead:[[0xA1,0xFE]], trail:[[0xA1,0xFE]] },
+  { id:'windows-1252', label:'Windows-1252（西欧）', kind:'sb' },
+  { id:'windows-1251', label:'Windows-1251（西里尔）', kind:'sb' },
+  { id:'koi8-r',       label:'KOI8-R（西里尔）',  kind:'sb' },
+  { id:'iso-8859-2',   label:'ISO-8859-2（中欧）', kind:'sb' },
+  { id:'iso-8859-7',   label:'ISO-8859-7（希腊）', kind:'sb' }
+];
+const ENC_BY_ID = new Map(ENC.map(e => [e.id, e]));
+
+/* 可用的编码（按浏览器支持情况过滤一次） */
+const AVAIL = (() => {
+  const ok = [];
+  for (const e of ENC){
+    try { new TextDecoder(e.id, { fatal: false }); ok.push(e); } catch (err) { /* 不支持则跳过 */ }
+  }
+  if (!ok.some(e => e.id === 'utf-8')) ok.unshift(ENC_BY_ID.get('utf-8'));
+  return ok;
+})();
+const AVAIL_IDS = AVAIL.map(e => e.id);
+
+/* 搜索用的编码集：排除 UTF-16
+   理由：UTF-16 解码任意两个字节几乎都能"成功"产出一个 BMP 码元，
+   于是任何输入都能变成一堆随机汉字，是纯粹的噪声来源。
+   UTF-16 仍保留在手动修复与 hex 视图里。 */
+const SEARCH_IDS = AVAIL.filter(e => e.id !== 'utf-16le' && e.id !== 'utf-16be').map(e => e.id);
+
+/* ============================================================
+   2. 编码器：把字符串按任意编码变回字节
+   浏览器只有 UTF-8 的 TextEncoder，其它编码得自建反向表。
+   做法：把候选字节序列一次性喂给 TextDecoder 批量解码，
+        再用换行分隔，得到「字符 → 字节」映射。
+   ============================================================ */
+const encCache = new Map();
+
+function buildEncTable(id){
+  if (encCache.has(id)) return encCache.get(id);
+  const spec = ENC_BY_ID.get(id);
+  const table = new Map();
+  const dec = new TextDecoder(id, { fatal: false });
+  const NL = 0x0A;
+  const push = (bytes) => {
+    // 单个序列单独解，简单可靠；数量不大（1~2.5 万）
+    const s = dec.decode(Uint8Array.from(bytes));
+    if (s.length === 1 && s.codePointAt(0) !== 0xFFFD){
+      const ch = s;
+      if (!table.has(ch)) table.set(ch, bytes.slice());
+    }
+  };
+  // 单字节部分必须先扫：GBK/Big5/Shift_JIS 都是「ASCII + 双字节」的混合编码，
+  // 少了这一段，乱码里的空格和英文字母会查不到而被填成 ?
+  for (let b = 0; b < 256; b++){
+    if (b === NL) continue;
+    push([b]);
+  }
+  if (spec && spec.kind === 'db'){
+    for (const [l0, l1] of spec.lead){
+      for (let a = l0; a <= l1; a++){
+        for (const [t0, t1] of spec.trail){
+          for (let b = t0; b <= t1; b++){
+            if (b === 0x7F) continue;
+            push([a, b]);
+          }
+        }
+      }
+    }
+  }
+  encCache.set(id, table);
+  return table;
+}
+
+function encodeTo(str, id, drop){
+  // 返回 { bytes, lossy, miss, total, missRate }
+  // drop=true 时丢弃无法映射的字符（而不是补 '?'）—— 乱码里常混着 U+FFFD，
+  // 它们代表"未知的字节"，补 ? 会引入错误字节，丢掉反而更干净
+  const out = [];
+  let lossy = false;
+  if (id === 'utf-8'){
+    return { bytes: new TextEncoder().encode(str), lossy: false };
+  }
+  if (id === 'utf-16le' || id === 'utf-16be'){
+    const le = (id === 'utf-16le');
+    for (const ch of str){
+      const c = ch.codePointAt(0);
+      if (c > 0xFFFF){
+        const v = c - 0x10000;
+        const hi = 0xD800 + (v >> 10), lo = 0xDC00 + (v & 0x3FF);
+        [hi, lo].forEach(u => { if (le){ out.push(u & 0xFF, u >> 8); } else { out.push(u >> 8, u & 0xFF); } });
+      } else {
+        if (le){ out.push(c & 0xFF, c >> 8); } else { out.push(c >> 8, c & 0xFF); }
+      }
+    }
+    return { bytes: Uint8Array.from(out), lossy: false };
+  }
+  const table = buildEncTable(id);
+  let miss = 0, total = 0, fffdCount = 0;
+  for (const ch of str){
+    total++;
+    if (ch === '\uFFFD'){ fffdCount++; if (drop) continue; out.push(0x3F); continue; }
+    const b = table.get(ch);
+    if (b){ for (const x of b) out.push(x); }
+    else {
+      if (drop) continue;
+      out.push(0x3F); miss++;   // 该字符在目标编码里不存在 → '?'
+    }
+  }
+  // U+FFFD 本来就是"未知字节"的占位，它的缺失不该算作编码能力不足
+  const denom = Math.max(1, total - fffdCount);
+  return { bytes: Uint8Array.from(out), lossy: (miss + fffdCount) > 0, miss, total, fffdCount,
+           missRate: miss / denom };
+}
+
+function decodeBytes(bytes, id){
+  try { return new TextDecoder(id, { fatal: false }).decode(bytes); }
+  catch (e){ return null; }
+}
+
+/* ============================================================
+   3. 文本评分：判断一段文本"像不像人话"
+   ============================================================ */
+const HANZI = "的一是在不了有和人这中大为上个国我以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经十三之进着等部度家电力里如水化高自二理起小物现实加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那社义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道命此变条只没结解问意建月公无系军很情者最立代想已通并提直题党程展五果料象员革位入常文总次品式活设及管特件长求老头基资边流路级少图山统接知较将组见计别她手角期根论运农指几九区强放决西被干做必战先回则任取据处队南给色光门即保治北造百规热领七海口东导器压志世金增争济阶油思术极交受联什认六共权收证改清己美再采转更单风切打白教速花带安场身车例真务具万每目至达走积示议声报斗完类八离华名确才科张信马节话米整空元况今集温传土许步群广石记需段研界拉林律叫且究观越织装影算低持音众书布复容儿须际商非验连断深难近矿千周委素技备半办青省列习响约支般史感劳便团往酸历市克何除消构府称太准精值号率族维划选标写存候毛亲快效斯院查江型眼王按格养易置派层片始却专状育厂京识适属圆包火住调满县局照参红细引听该铁价严首底液官德随病苏失尔死讲配女黄推显谈罪神艺呢席含企望密批营项防举球英氧势告李台落木帮轮破亚师围注远字材排供河态封另施减树溶怎止案言士均武固叶鱼波视仅费紧爱左章早朝害续轻服试食充兵源判护司足某练差致板田降黑犯负击范继兴似余坚曲输修故城夫够送笔船占右财吃富春职觉汉画功巴跟虽杂飞检吸助升阳互初创抗考投坏策古径换未跑留钢曾端责站简述钱副尽帝射草冲承独令限阿宣环双请超微让控州良轴找否纪益依优顶础载倒房突坐粉敌略客袁冷胜绝析块剂测丝协重诉念陈仍罗盐友洋错苦夜刑移频逐靠混母短皮终聚汽村云哪既距卫停烈央察烧行迅境若印洲刻括激孔搞甚室待核校散侵吧甲游久菜味旧模湖货损预阻毫普稳乙妈植息扩银语挥酒守拿序纸医缺雨吗针刘啊急唱误训愿审附获茶鲜粮斤孩脱硫肥善龙演父渐血欢械掌歌沙著刚攻谓盾讨晚粒乱燃矛乎杀药宁鲁贵钟煤读班伯香介迫句丰培握兰担弦蛋沉假穿执答乐谁顺烟缩征脸喜松脚困异免背星福买染井概慢怕磁倍祖皇促静补评翻肉践尼衣宽扬棉希伤操垂秋宜氢套督振架亮末宪庆编牛触映雷销诗座居抓裂胞呼娘景威绿晶厚盟衡鸡孙延危胶还屋乡临陆顾掉呀灯岁措束耐剧玉赵跳哥季课凯胡额款绍卷齐伟蒸殖永宗苗川炉岩弱零杨奏沿露杆探滑镇饭浓航怀赶库夺伊灵税途灭赛归召鼓播盘裁险康唯录菌纯借糖盖横符私努堂域枪润幅哈竟熟虫泽脑壤碳欧遍侧寨敢彻虑斜薄庭纳弹饲伸折麦湿暗荷瓦塞床筑恶户访塔奇透梁刀旋迹卡氯遇份毒泥退洗摆灰彩卖耗夏择忙铜献硬予繁圈雪函亦抽篇阵阴丁尺追堆雄迎泛爸楼避谋吨野猪旗累偏典馆索秦脂潮爷豆忽托惊塑遗愈朱替纤粗倾尚痛楚谢奋购磨君池旁碎骨监捕弟暴割贯殊释词亡壁顿宝午尘闻揭炮残冬桥妇警综招吴付浮遭徐您摇谷赞箱隔订男吹园纷唐败宋玻巨耕坦荣闭湾键凡驻锅救恩剥凝碱齿截炼麻纺禁废盛版缓净睛昌婚涉筒嘴插岸朗庄街藏姑贸腐奴啦惯乘伙恢匀纱扎辩耳彪臣亿璃抵脉秀萨俄网舞店喷纵寸汗挂洪贺闪柬爆烯津稻墙软勇像滚厘蒙芳肯坡柱荡腿仪旅尾轧冰贡登黎削钻勒荒疫死叙夹符";
+const RU_WORDS = ["привет","мир","это","тест","хорошо","спасибо","русск","текст","кодировка","файл","строка","да","нет"];
+const HANZI_SET = new Set(Array.from(HANZI));
+const WORDS = ["中国","中文","可以","我们","这个","公司","数据","时间","问题","系统","用户","文件","内容","开发","测试","服务","产品","项目","管理","信息","网络","技术","北京","上海","工作","学校","先生","小姐","谢谢","你好","没有","因为","所以","如果","但是","而且","已经","还是","需要","应该","知道","看到","东西","地方","朋友","生活","今天","明天","昨天","现在","手机","电脑","视频","音乐","电影","新闻","社会","国家","城市","人民","历史","文化","艺术","科学","经济","政治","教育","医疗","环境","交通","旅游","美食","健康","运动","游戏"];
+
+function scoreText(s, lang){
+  if (s == null) return { score: -1e9, why: 'empty' };
+  const chars = Array.from(s);
+  const n = chars.length;
+  if (!n) return { score: -1e9, why: 'empty' };
+
+  let fffd = 0, ctrl = 0, cjk = 0, hanziHit = 0, kana = 0, hangul = 0, cyr = 0, cyrUpper = 0,
+      ascii = 0, ques = 0, latinSup = 0, greek = 0, other = 0, digits = 0;
+
+  for (const ch of chars){
+    const c = ch.codePointAt(0);
+    if (c === 0xFFFD){ fffd++; continue; }
+    if (c < 0x20 && c !== 9 && c !== 10 && c !== 13){ ctrl++; continue; }
+    if (c === 0x20){ ascii++; continue; }
+    if (c >= 0x4E00 && c <= 0x9FFF){ cjk++; if (HANZI_SET.has(ch)) hanziHit++; }
+    else if (c >= 0x3040 && c <= 0x30FF) kana++;
+    else if (c >= 0xAC00 && c <= 0xD7A3) hangul++;
+    else if (c >= 0x0400 && c <= 0x04FF){ cyr++; if (c >= 0x0410 && c <= 0x042F) cyrUpper++; }
+    else if (c >= 0x0370 && c <= 0x03FF) greek++;
+    else if (c < 0x80){ ascii++; if (c >= 0x30 && c <= 0x39) digits++; if (ch === '?') ques++; }
+    else if (c >= 0xA0 && c <= 0xFF) latinSup++;
+    else other++;
+  }
+
+  let wordHit = 0;
+  for (const w of WORDS){ if (s.indexOf(w) >= 0) wordHit++; }
+  const low = s.toLowerCase();
+  for (const w of RU_WORDS){ if (low.indexOf(w) >= 0) wordHit++; }
+
+  const r = x => x / n;
+  let score = 0;
+  const detail = [];
+
+  // 硬伤：出现替换字符几乎可以肯定没修对
+  if (fffd) score -= 120;
+  score -= r(fffd) * 300;  if (fffd) detail.push('U+FFFD ×' + fffd);
+  score -= r(ctrl) * 220;  if (ctrl) detail.push('控制字符 ×' + ctrl);
+  score -= r(ques) * 90;   if (ques) detail.push('问号 ×' + ques);
+
+  // 语言匹配
+  const wantCjk = (lang === 'zh' || lang === 'auto');
+  const wantJa  = (lang === 'ja' || lang === 'auto');
+  const wantKo  = (lang === 'ko' || lang === 'auto');
+  const wantRu  = (lang === 'ru' || lang === 'auto');
+
+  // mass：某类文字在整段里占多大比重。零星的假名／谚文／希腊字母不该拿到和纯文本一样的加分
+  const mass = c => clamp(c / n * 2, 0.25, 1);
+  // noise：噪音字符 + 别国文字。汉字要和它们抢地盘，抢不过就说明这一小撮汉字是撞出来的
+  const noise = other + ctrl + fffd + ques + kana + hangul + cyr + greek;
+  // 脚本混写：中／日（汉字+假名算一家）与韩／俄／希同时出现，正常人类文本几乎不会这样写
+  const groups = [ (cjk >= 2 || kana >= 2), hangul >= 2, cyr >= 2, greek >= 2 ].filter(Boolean).length;
+
+  if (cjk){
+    const hit = hanziHit / cjk;
+    // coverage：一两个汉字撑不起「这是中文」的结论（?????乘??? 这种就是这么混过去的）
+    // 注意只跟噪音和别国文字比 —— 夹在中间的英文单词不该稀释中文的浓度
+    const coverage = clamp(cjk / Math.max(1, cjk + noise), 0.2, 1);
+    score += (55 + hit * 65) * coverage;
+    if (cjk >= 5 && hit < 0.25){ score -= 95; detail.push('疑似随机汉字（常见字命中仅 ' + Math.round(hit * 100) + '%）'); }
+    if (wantJa) score -= 12;
+    detail.push('汉字 ' + cjk + '（常见字命中 ' + Math.round(hit * 100) + '%）');
+  }
+  if (kana){ score += (wantJa ? 70 : 10) * mass(kana); detail.push('假名 ' + kana); }
+  if (hangul){ score += (wantKo ? 70 : 10) * mass(hangul); detail.push('谚文 ' + hangul); }
+  if (cyr){
+    score += (wantRu ? 60 : 5) * mass(cyr);
+    // 正常俄文小写为主；编码乱转的产物常常是一片大写
+    if (cyr >= 5 && cyrUpper / cyr > 0.6){ score -= 70; detail.push('西里尔几乎全大写 ×' + cyrUpper); }
+    detail.push('西里尔 ' + cyr);
+  }
+  if (greek){ score += 30 * mass(greek); detail.push('希腊字母 ' + greek); }
+  if (groups >= 2){ score -= 45 * (groups - 1); detail.push('脚本混写 ×' + groups); }
+
+  if (wordHit){ score += Math.min(wordHit, 12) * 6; detail.push('常见词 ×' + wordHit); }
+
+  // 纯 ASCII 文本（可能是正常英文，也可能是没修好的中间态）
+  if (!cjk && !kana && !hangul && !cyr && !greek){
+    if (latinSup > 0){ score -= r(latinSup) * 70; detail.push('孤立高位拉丁字符 ×' + latinSup); }
+    const letters = ascii - digits;
+    if (letters > 0){
+      // 英文大致合理，给个中性分；但如果混着奇怪符号会由 other 扣分
+      score += 18;
+      detail.push('ASCII ' + ascii);
+    }
+  }
+
+  score -= r(other) * 45;
+  if (other) detail.push('其它符号 ×' + other);
+
+  // 期望中文却一个汉字都没有 → 大概率没修对
+  if (lang === 'zh' && cjk === 0) score -= 60;
+  if (lang === 'ja' && kana === 0 && cjk === 0) score -= 60;
+  if (lang === 'ko' && hangul === 0) score -= 60;
+  if (lang === 'ru' && cyr === 0) score -= 60;
+
+  return { score: Math.round(score), detail, stats: { n, cjk, kana, hangul, cyr, fffd, ctrl, ascii, ques } };
+}
+
+/* ============================================================
+   4. 症状识别
+   ============================================================ */
+const SYMPTOMS = [
+  {
+    name: '双重 UTF-8 / GBK 误读',
+    level: 'bad',
+    test: s => /锟斤拷|锟?拷|烫烫烫|屯屯屯|锘/.test(s),
+    desc: 'UTF-8 字节被按 GBK 解读一次之后，结果又被当成文本再次编码、再次误读。中文世界里最常见也最难认的一种。'
+  },
+  {
+    name: '替换字符 U+FFFD（�）',
+    level: 'bad',
+    test: s => s.indexOf('\uFFFD') >= 0,
+    desc: '字节序列在目标编码里不合法，被替换成了 U+FFFD。原始字节可能已经永久丢失，修复后需要人工核对。'
+  },
+  {
+    name: 'UTF-8 被按 Latin-1 / CP1252 解读',
+    level: 'bad',
+    test: s => {
+      // 特征：C1 控制区字符，或 CP1252 特有的那批符号（€ ' ' " " • – — ™ Š ‹ Œ …）
+      const m = s.match(/[\u0080-\u009F]|â€|Ã[\u0080-\u00BF]|[\u2018-\u201E\u2020-\u2022\u2026\u2030\u2039\u203A\u20AC\u0160\u0161\u017D\u017E\u0152\u0153\u0178]/g);
+      return (m || []).length >= 2;
+    },
+    desc: '每个 UTF-8 字节被单独解释成一个拉丁字符，于是中文变成了 ä¸­æ–‡ 这种样子。特征是出现大量 Ã/Â，或 € • – ™ ‹ 这类 CP1252 专属符号。'
+  },
+  {
+    name: '西里尔特征误读',
+    level: 'warn',
+    test: s => /[ÐÑ][\u0080-\u00BF]|Ñ|Ð/.test(s) && !/[一-鿿]/.test(s),
+    desc: '出现了 Ð / Ñ 打头的双字符组合，通常是 UTF-8 字节被当成 Latin-1 解读后表现出的西里尔特征。'
+  },
+  {
+    name: '问号替换',
+    level: 'bad',
+    test: s => /\?{3,}/.test(s),
+    desc: '原字符在目标编码里不存在，被替换成了问号。这一步不可逆 —— 能救回的部分取决于还有多少原始信息。'
+  },
+  {
+    name: '高位拉丁字符堆积',
+    level: 'warn',
+    test: s => (s.match(/[-ÿ]/g) || []).length >= Math.max(2, s.length * 0.15),
+    desc: '大量 U+0080–U+00FF 区间的字符单独出现，几乎不可能是正常文本。'
+  }
+];
+
+function diagnose(s){
+  const hits = [];
+  SYMPTOMS.forEach(sy => { try { if (sy.test(s)) hits.push(sy); } catch (e) { /* ignore */ } });
+  return hits;
+}
+
+/* ============================================================
+   5. 修复链搜索（beam search）
+   一步 = 「用 A 把当前文本编码成字节」+「用 B 把字节解码成文本」
+   ============================================================ */
+/* 常见的「误读编码」：字节本来是 UTF-8，却被当成这些编码读了一遍 */
+const COMMON_MISREAD = new Set(['gbk', 'gb18030', 'big5', 'windows-1252', 'windows-1251',
+                                'koi8-r', 'shift_jis', 'euc-jp', 'euc-kr', 'iso-8859-2', 'iso-8859-7']);
+function chainBonus(chain){
+  let b = 0;
+  for (const st of chain){
+    if (COMMON_MISREAD.has(st.from)) b += 6;   // 被某个本地编码误读，很常见
+    if (st.to === 'utf-8') b += 5;             // 修回 UTF-8，是绝大多数情况的正解
+  }
+  b -= (chain.length - 1) * 10;                // 奥卡姆：能用一步解释就别绕两步
+  return b;
+}
+
+/* U+FFFD 字节回填
+   一个字节被彻底毁掉时，解码器会留下 U+FFFD。这个字节本身找不回来了，
+   但 UTF-8 自己的结构会告诉我们它"必须"落在哪个区间 —— 比如前导字节 EC
+   后面必须跟两个 0x80–0xBF 的续字节。把候选缩到几十个再逐个试，
+   常能把那个字救回来。 */
+function encodeWithFFFDMarks(str, id){
+  const table = buildEncTable(id);
+  const out = [], marks = [];
+  for (const ch of Array.from(str)){
+    if (ch === '\uFFFD'){ marks.push(out.length); out.push(0x3F); continue; }
+    const b = table.get(ch);
+    if (b){ for (const x of b) out.push(x); }
+    else out.push(0x3F);
+  }
+  return { bytes: Uint8Array.from(out), marks };
+}
+
+const CONT_BYTES = (() => { const a = []; for (let v = 0x80; v <= 0xBF; v++) a.push(v); return a; })();
+const ALL_BYTES = (() => { const a = []; for (let v = 0; v < 256; v++) a.push(v); return a; })();
+
+function refineFFFD(input, lang, results){
+  /* 严格约束，防止它变成"编造"机器：
+     1) 只有当前最佳结果里仍然残留 U+FFFD 时才猜
+     2) 猜完必须真的减少残损（否则丢弃）
+     3) 结果扣 8 分并在界面上标注为推测值 */
+  const extra = [];
+  const nFFFD = (Array.from(input).filter(c => c === '\uFFFD')).length;
+  if (!nFFFD || nFFFD > 2 || input.length > 400) return extra;
+  const top = results.filter(r => !r.origin)[0];
+  if (!top) return extra;
+  const baseFFFD = (top.stats && top.stats.fffd) || 0;
+  if (!baseFFFD) return extra;                       // 已经干净，不需要猜
+
+  const cands = results.filter(r => !r.origin && r.chain.length === 1).slice(0, nFFFD === 1 ? 8 : 4);
+  const pools = [];
+  for (let i = 0; i < nFFFD; i++) pools.push(nFFFD === 1 ? CONT_BYTES.concat(ALL_BYTES) : CONT_BYTES);
+
+  let bestFill = null;
+  for (const cand of cands){
+    const from = cand.chain[0].from, to = cand.chain[0].to;
+    let em;
+    try { em = encodeWithFFFDMarks(input, from); } catch (e) { continue; }
+    if (em.marks.length !== nFFFD) continue;
+    const rec = (idx) => {
+      if (idx >= em.marks.length){
+        const t = decodeBytes(em.bytes, to);
+        if (!t) return;
+        const sc = scoreText(t, lang);
+        if (sc.stats.fffd < baseFFFD){                    // 必须真的修好了一点
+          const total = sc.score + chainBonus(cand.chain) - 8;
+          if (!bestFill || total > bestFill.score)
+            bestFill = { text: t, score: total, chain: cand.chain, detail: sc.detail, stats: sc.stats };
+        }
+        return;
+      }
+      for (const v of pools[idx]){ em.bytes[em.marks[idx]] = v; rec(idx + 1); }
+    };
+    rec(0);
+  }
+  if (bestFill) extra.push({
+    text: bestFill.text, chain: bestFill.chain.slice(), score: bestFill.score, raw: bestFill.score,
+    detail: (bestFill.detail || []).concat(['已推测回填 ' + nFFFD + ' 个被毁坏的字节']),
+    stats: bestFill.stats, lossy: true, refilled: true
+  });
+  return extra;
+}
+
+function searchChains(input, lang, maxDepth){
+  const results = [];
+  const seen = new Set();
+  const keyOf = t => t.length + '|' + t.slice(0, 200) + '|' + t.slice(-100);
+
+  const add = (text, chain, lossy) => {
+    if (!text) return null;
+    const key = keyOf(text);
+    if (seen.has(key)) return null;
+    seen.add(key);
+    const sc = scoreText(text, lang);
+    const item = {
+      text, chain: chain.slice(), score: sc.score + chainBonus(chain),
+      raw: sc.score, detail: sc.detail, stats: sc.stats, lossy: !!lossy
+    };
+    results.push(item);
+    return item;
+  };
+
+  // 起点
+  const base = scoreText(input, lang);
+  results.push({ text: input, chain: [], score: base.score, raw: base.score,
+                 detail: base.detail, stats: base.stats, lossy: false, origin: true });
+  seen.add(keyOf(input));
+
+  // 中间态本身往往还是乱码（比如双重误读解开第一层后仍是"涓枃"这种），
+  // 按最终评分排序会把它剪掉 —— 所以 beam 要宽，并且保证解码目标有多样性
+  let frontier = [{ text: input, chain: [] }];
+  const BEAM = 20;
+  if (input.length > 5000) maxDepth = Math.min(maxDepth, 2);
+
+  for (let depth = 1; depth <= maxDepth; depth++){
+    const next = [];
+    for (const node of frontier){
+      for (const eA of SEARCH_IDS){
+        let enc;
+        try { enc = encodeTo(node.text, eA); } catch (e) { continue; }
+        if (!enc.bytes.length) continue;
+        if (enc.lossy && eA !== 'utf-8'){
+          // 真实乱码里常混着几个无法映射的字符，整条链依然有效 —— 只砍掉大面积有损的
+          if (enc.missRate > 0.3) continue;
+        }
+        // 有损时额外试一版"丢掉不可映射字符"的字节流，避免 '?' 污染后续解码
+        const variants = [enc];
+        if (enc.lossy){
+          try {
+            const alt = encodeTo(node.text, eA, true);
+            if (alt.bytes.length && alt.bytes.length !== enc.bytes.length) variants.push(alt);
+          } catch (e) { /* ignore */ }
+        }
+        for (const en of variants){
+        for (const eB of SEARCH_IDS){
+          if (eA === eB) continue;
+          const text = decodeBytes(en.bytes, eB);
+          if (text == null || !text.length || text === node.text) continue;
+          const chain = node.chain.concat([{ from: eA, to: eB, bytes: en.bytes.length, lossy: en.lossy }]);
+          const item = add(text, chain, en.lossy);
+          if (item) next.push({ text, chain, score: item.score, from: eA, to: eB });
+        }
+        }
+      }
+    }
+    if (!next.length) break;
+    // 先按 (from,to) 分组各留最优，保证不同编码路径都被探索，再取全局 top
+    const byPair = new Map();
+    next.forEach(x => {
+      const k = x.from + '>' + x.to;
+      if (!byPair.has(k) || byPair.get(k).score < x.score) byPair.set(k, x);
+    });
+    const diverse = Array.from(byPair.values());
+    diverse.sort((a, b) => b.score - a.score);
+    frontier = diverse.slice(0, BEAM);
+  }
+
+  // 有字节被彻底毁掉时，试着把它填回来
+  try {
+    refineFFFD(input, lang, results).forEach(x => {
+      const k = keyOf(x.text);
+      if (!seen.has(k)){ seen.add(k); results.push(x); }
+    });
+  } catch (e) { /* 回填失败不影响主结果 */ }
+
+  results.sort((a, b) => b.score - a.score);
+  return results;
+}
+
+/* ============================================================
+   6. 病因图：从「原文 → 乱码」的正向推演
+   给定一条修复链 [A→B, C→D]，乱码产生过程是它的逆：
+   原文 --enc(B)--> 字节 --dec(A)--> 中间态 ... 最后得到输入
+   ============================================================ */
+function buildCauseChain(best, input){
+  if (!best || !best.chain.length) return null;
+  const steps = [];
+  // 修复链是 输入 --enc(A)--> bytes --dec(B)--> ...
+  // 那么当年出错的顺序正好反过来：原文 --enc(B)--> bytes --dec(A)--> 输入
+  const rev = best.chain.slice().reverse();
+  let cur = best.text;                       // 还原出的原文
+  for (const st of rev){
+    const enc = encodeTo(cur, st.to);        // 当年用 B 编码
+    const mid = decodeBytes(enc.bytes, st.from);  // 被 A 误读
+    steps.push({
+      inText: cur,
+      encName: st.to,
+      bytes: enc.bytes,
+      decName: st.from,
+      outText: mid
+    });
+    cur = mid;
+  }
+  return steps;
+}
+
+/* ============================================================
+   7. hex 视图
+   ============================================================ */
+function hexDump(bytes, encId){
+  const lines = [];
+  const per = 16;
+  for (let off = 0; off < bytes.length; off += per){
+    const slice = Array.from(bytes.slice(off, off + per));
+    let hex = '';
+    for (let i = 0; i < per; i++){
+      if (i < slice.length){
+        const b = slice[i];
+        hex += (b < 16 ? '0' : '') + b.toString(16).toUpperCase() + (i === 7 ? '  ' : ' ');
+      } else {
+        hex += '   ' + (i === 7 ? ' ' : '');
+      }
+    }
+    let shown = '';
+    try { shown = decodeBytes(Uint8Array.from(slice), encId) || ''; } catch (e) { shown = ''; }
+    const txt = Array.from(shown).map(ch => {
+      const c = ch.codePointAt(0);
+      return (c === 0xFFFD || c < 0x20 || c === 0x7F) ? '·' : ch;
+    }).join('');
+    lines.push({ off, hex, txt });
+  }
+  return lines;
+}
+
+/* ============================================================
+   8. 示例：全都由真实编码链生成，保证可修复
+   ============================================================ */
+function garble(text, chain){
+  // chain: ['utf-8','gbk'] = 用 utf-8 编码，再用 gbk 解码
+  let cur = text;
+  for (let i = 0; i + 1 < chain.length; i += 2){
+    const b = encodeTo(cur, chain[i]).bytes;
+    const d = decodeBytes(b, chain[i + 1]);
+    if (d == null) break;
+    cur = d;
+  }
+  return cur;
+}
+function brokenUtf8(text, pos){
+  // 破坏一个字节，制造 U+FFFD
+  const b = encodeTo(text, 'utf-8').bytes;
+  if (pos < b.length) b[pos] = 0xFF;
+  return decodeBytes(b, 'utf-8');
+}
+
+function buildSamples(){
+  const list = [
+    { name: '锟斤拷（双重误读）', text: '中文测试：这是一段被反复误读的文本', chain: ['utf-8', 'gbk', 'utf-8', 'gbk'] },
+    { name: 'UTF-8 被当 GBK',   text: '中文测试：订单编号已生成，请查收', chain: ['utf-8', 'gbk'] },
+    { name: 'UTF-8 被当 Latin1', text: '中文测试 café naïve',            chain: ['utf-8', 'windows-1252'] },
+    { name: '日文被当 GBK',      text: '日本語のテストです',                chain: ['utf-8', 'gbk'] },
+    { name: '俄文被当 Latin1',   text: 'Привет мир, это тест',           chain: ['utf-8', 'windows-1252'] },
+    { name: '韩文被当 GBK',      text: '한국어 테스트입니다',                chain: ['utf-8', 'gbk'] }
+  ];
+  const out = list.map(s => {
+    let garbled;
+    try { garbled = garble(s.text, s.chain); } catch (e) { garbled = ''; }
+    return { name: s.name, text: garbled, answer: s.text, chain: s.chain };
+  });
+  try {
+    out.push({ name: '含 U+FFFD（部分有损）', text: brokenUtf8('中文测试：这个字节被破坏了', 3), answer: '中文测试：这个字节被破坏了', chain: ['utf-8', 'utf-8'] });
+  } catch (e) { /* ignore */ }
+  return out.filter(s => s.text && s.text.length);
+}
+
+/* ============================================================
+   9. 渲染
+   ============================================================ */
+function encLabel(id){
+  const e = ENC_BY_ID.get(id);
+  return e ? e.label : id;
+}
+function fillSelect(sel, opts, def){
+  sel.innerHTML = opts.map(o =>
+    '<option value="' + esc(o.v) + '"' + (o.v === def ? ' selected' : '') + '>' + esc(o.t) + '</option>'
+  ).join('');
+}
+
+function renderSymptoms(syms, input){
+  const box = $('#symBox');
+  if (!syms.length){
+    $('#symHint').textContent = '未发现典型乱码特征';
+    box.innerHTML = '<div class="note ok">没有匹配到已知的乱码特征。这段文字可能本来就是正常的，' +
+      '也可能是某种不常见的误读 —— 下面的候选结果里仍然会列出所有可能的修复方案。</div>';
+    return;
+  }
+  const bad = syms.filter(s => s.level === 'bad').length;
+  $('#symHint').textContent = syms.length + ' 项（严重 ' + bad + ' 项）';
+  box.innerHTML = syms.map(s =>
+    '<div class="sym ' + s.level + '"><span class="ic">' + (s.level === 'bad' ? '!' : '?') + '</span>' +
+    '<div><div class="tt">' + esc(s.name) + '</div><div class="dd">' + esc(s.desc) + '</div></div></div>'
+  ).join('');
+}
+
+function renderCandidates(results, lang){
+  const box = $('#candBox');
+  const origin = results.find(r => r.origin);
+  const fixed = results.filter(r => !r.origin);
+  const best = fixed[0];
+
+  if (!fixed.length){
+    box.innerHTML = '<div class="empty">没能生成任何修复候选。</div>';
+    return null;
+  }
+
+  const healthy = origin && (!best || origin.score >= best.score);
+  $('#resHint').textContent = fixed.length + ' 个候选方案 · 目标语言 ' +
+    ({ auto:'自动', zh:'中文', ja:'日文', ko:'韩文', ru:'西里尔文', other:'其它' })[lang];
+
+  let html = '';
+  if (healthy){
+    html += '<div class="note ok">这段文字本身得分最高 —— 它大概率<b>不是乱码</b>，或者乱码已经无法还原。' +
+            '下面仍列出备选方案供参考。</div>';
+  }
+
+  html += fixed.slice(0, 6).map((c, i) => {
+    const chain = c.chain.map(st =>
+      '<span class="step">' + esc(encLabel(st.from)) + '</span>' +
+      '<span class="ar">→ 编码 →</span>' +
+      '<span class="step">' + esc(encLabel(st.to)) + '</span>'
+    ).join('<span class="ar">；</span>');
+    const lossy = c.chain.some(st => st.lossy);
+    return '<div class="cand' + (i === 0 && !healthy ? ' best' : '') + '">' +
+      '<div class="cand-h">' +
+        '<span class="score">' + c.score + '</span>' +
+        (i === 0 && !healthy ? '<span class="badge b-ok">最佳</span>' : '') +
+        (lossy ? '<span class="badge b-warn">有损：部分字符在中间编码里不存在</span>' : '<span class="badge b-info">无损</span>') +
+        '<span class="badge ' + (c.stats.fffd ? 'b-bad' : 'b-ok') + '">' +
+          (c.stats.fffd ? '残留 ' + c.stats.fffd + ' 个 U+FFFD' : '无替换字符') + '</span>' +
+      '</div>' +
+      '<div class="bar"><i style="width:' + clamp((c.score + 60) / 200 * 100, 3, 100).toFixed(1) + '%"></i></div>' +
+      '<div class="out">' + esc(c.text) + '</div>' +
+      '<div class="chain"><span class="op">修复链</span>' + chain + '</div>' +
+      (c.detail && c.detail.length ? '<div class="kv" style="margin-top:6px">' + esc(c.detail.join(' · ')) + '</div>' : '') +
+      '</div>';
+  }).join('');
+
+  box.innerHTML = html;
+  return healthy ? null : best;
+}
+
+function renderCause(steps){
+  const box = $('#causeBox');
+  if (!steps || !steps.length){
+    box.innerHTML = '<div class="empty">当前没有可推演的编码链（这段文字可能本来就是正常的）。</div>';
+    return;
+  }
+  const hexOf = b => Array.from(b.slice(0, 24)).map(x => (x < 16 ? '0' : '') + x.toString(16).toUpperCase()).join(' ') +
+                     (b.length > 24 ? ' …' : '');
+  box.innerHTML = '<div class="note">下图是<b>当年出错的正向过程</b>：左边是原文，经过一次「用某编码写成字节 → 被另一个编码读回去」，就变成了右边的样子。</div>' +
+    steps.map((st, i) =>
+      '<div class="cand">' +
+      '<div class="cand-h"><span class="badge b-info">第 ' + (i + 1) + ' 次误读</span>' +
+        '<span class="kv">用 <b>' + esc(encLabel(st.encName)) + '</b> 编码 → 被 <b>' + esc(encLabel(st.decName)) + '</b> 解码</span></div>' +
+      '<div class="grid2">' +
+        '<div><div class="kv" style="margin-bottom:5px">输入</div><div class="out" style="max-height:120px">' + esc(st.inText) + '</div></div>' +
+        '<div><div class="kv" style="margin-bottom:5px">输出</div><div class="out" style="max-height:120px">' + esc(st.outText) + '</div></div>' +
+      '</div>' +
+      '<div class="kv" style="margin-top:9px">中间字节（' + st.bytes.length + ' B）：<b>' + esc(hexOf(st.bytes)) + '</b></div>' +
+      '</div>'
+    ).join('');
+}
+
+function renderHex(input, encId){
+  const enc = encodeTo(input, encId);
+  const lines = hexDump(enc.bytes, encId);
+  const box = $('#hexBox');
+  if (!lines.length){ box.innerHTML = '<div class="empty">没有字节。</div>'; return; }
+  box.innerHTML =
+    '<div class="kv" style="margin-bottom:8px">共 <b>' + enc.bytes.length + '</b> 字节' +
+    (enc.lossy ? ' · <span style="color:#b45309">其中有字符在 ' + esc(encLabel(encId)) + ' 里不存在，已按 ? 处理</span>' : '') + '</div>' +
+    '<div class="hex">' +
+    lines.map(l =>
+      '<span class="off">' + l.off.toString(16).padStart(8, '0') + '  </span>' +
+      '<span class="b">' + esc(l.hex) + '</span>' +
+      '<span class="asc">  |' + esc(l.txt) + '|</span>'
+    ).join('\n') +
+    '</div>';
+}
+
+/* ============================================================
+   10. 报告
+   ============================================================ */
+function genReport(input, syms, results, lang, best){
+  const L = [];
+  const now = new Date().toLocaleString('zh-CN', { hour12: false });
+  L.push('# 乱码急诊报告');
+  L.push('');
+  L.push('- 输入长度：**' + Array.from(input).length + ' 字符**');
+  L.push('- 目标语言：' + ({ auto:'自动', zh:'中文', ja:'日文', ko:'韩文', ru:'西里尔文', other:'其它' })[lang]);
+  L.push('- 生成时间：' + now);
+  L.push('');
+  L.push('## 输入');
+  L.push('');
+  L.push('```');
+  L.push(input);
+  L.push('```');
+  L.push('');
+  L.push('## 症状');
+  L.push('');
+  if (syms.length) syms.forEach(s => { L.push('- **' + s.name + '**（' + s.level + '）：' + s.desc); });
+  else L.push('- 未匹配到典型特征');
+  L.push('');
+  L.push('## 修复候选');
+  L.push('');
+  const fixed = results.filter(r => !r.origin).slice(0, 8);
+  if (fixed.length){
+    L.push('| 排名 | 得分 | 修复链 | 有损 | 结果 |');
+    L.push('|---:|---:|---|---|---|');
+    fixed.forEach((c, i) => {
+      const chain = c.chain.map(st => encLabel(st.from) + '→' + encLabel(st.to)).join(' ; ');
+      L.push('| ' + (i + 1) + ' | ' + c.score + ' | ' + chain + ' | ' + (c.chain.some(s => s.lossy) ? '是' : '否') +
+             ' | `' + c.text.replace(/\|/g, '\\|').replace(/\n/g, ' ') + '` |');
+    });
+  } else L.push('无可用候选。');
+  L.push('');
+  if (best){
+    L.push('## 推荐结果');
+    L.push('');
+    L.push('```');
+    L.push(best.text);
+    L.push('```');
+    L.push('');
+    L.push('修复链：' + best.chain.map(st => '用 ' + encLabel(st.from) + ' 编码 → 按 ' + encLabel(st.to) + ' 解码').join('，再'));
+    L.push('');
+  }
+  L.push('---');
+  L.push('由 [Mojibake ER](https://github.com/CJX0712/mojibake-er) 本地生成，文本未离开本机。');
+  return L.join('\n');
+}
+
+/* ============================================================
+   11. 分析与事件
+   ============================================================ */
+let STATE = null;
+
+function run(){
+  const btn = $('#btnRun'), err = $('#ioErr');
+  const input = $('#raw').value;
+  if (!input.trim()){ err.textContent = '先粘贴一段乱码，或者点上面的示例'; return; }
+  err.textContent = '';
+  btn.disabled = true; btn.textContent = '诊断中…';
+  setTimeout(() => {
+    try {
+      const lang = $('#lang').value;
+      const depth = parseInt($('#depth').value, 10) || 2;
+      const syms = diagnose(input);
+      const results = searchChains(input, lang, depth);
+      const best = renderCandidates(results, lang);
+      renderSymptoms(syms, input);
+      renderCause(buildCauseChain(best, input));
+      renderHex(input, $('#hexEnc').value || 'utf-8');
+      STATE = { input, lang, depth, syms, results, best };
+      $('#out').hidden = false;
+      updateManual();
+    } catch (e){
+      err.textContent = '诊断失败：' + (e && e.message ? e.message : e);
+    } finally {
+      btn.disabled = false; btn.textContent = '开始诊断';
+    }
+  }, 16);
+}
+
+function updateManual(){
+  if (!STATE) return;
+  const from = $('#mFrom').value, to = $('#mTo').value;
+  let enc, text = '';
+  try {
+    enc = encodeTo(STATE.input, from);
+    text = decodeBytes(enc.bytes, to) || '';
+  } catch (e){ text = '（该浏览器不支持这一组合）'; }
+  const hex = enc ? Array.from(enc.bytes.slice(0, 512)).map(b => (b < 16 ? '0' : '') + b.toString(16).toUpperCase()).join(' ') : '';
+  $('#mBytes').textContent = hex + (enc && enc.bytes.length > 512 ? ' …' : '');
+  const sc = scoreText(text, STATE.lang);
+  $('#mOut').innerHTML = esc(text) +
+    '<div class="kv" style="margin-top:9px">评分 <b>' + sc.score + '</b>' +
+    (enc && enc.lossy ? ' · 编码有损' : '') + '</div>';
+}
+
+function download(name, text, mime){
+  const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+}
+
+function copyText(t){
+  if (navigator.clipboard) navigator.clipboard.writeText(t);
+  else { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+}
+
+function bind(){
+  const opts = AVAIL.map(e => ({ v: e.id, t: e.label }));
+  fillSelect($('#mFrom'), opts, 'gbk');
+  fillSelect($('#mTo'), opts, 'utf-8');
+  fillSelect($('#hexEnc'), opts, 'utf-8');
+
+  const samples = buildSamples();
+  $('#samples').innerHTML = samples.map((s, i) =>
+    '<button data-i="' + i + '">' + esc(s.name) + '</button>'
+  ).join('');
+  $$('#samples button').forEach(b => b.addEventListener('click', () => {
+    const s = samples[parseInt(b.getAttribute('data-i'), 10)];
+    $('#raw').value = s.text;
+    $('#ioErr').textContent = '';
+    $$('#samples button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    run();
+  }));
+
+  $('#btnRun').addEventListener('click', run);
+  $('#btnClear').addEventListener('click', () => { $('#raw').value = ''; $('#out').hidden = true; $('#ioErr').textContent = ''; });
+  $('#btnFile').addEventListener('click', () => $('#file').click());
+  $('#file').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      // 二进制读取，先按 UTF-8 试解；若失败则由评分驱动去猜
+      const buf = fr.result;
+      let s = '';
+      try { s = decodeBytes(new Uint8Array(buf), 'utf-8') || ''; } catch (err) { s = ''; }
+      if (!s || s.indexOf('\uFFFD') >= 0){
+        // 交给用户拖动时也可直接看 hex；这里退而用 gbk 再试
+        const alt = decodeBytes(new Uint8Array(buf), 'gbk');
+        if (alt && scoreText(alt, 'zh').score > scoreText(s, 'zh').score) s = alt;
+      }
+      $('#raw').value = s;
+      run();
+    };
+    fr.readAsArrayBuffer(f);
+  });
+
+  const drop = $('#drop');
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!f) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      let s = '';
+      try { s = decodeBytes(new Uint8Array(fr.result), 'utf-8') || ''; } catch (err) { s = ''; }
+      $('#raw').value = s;
+      run();
+    };
+    fr.readAsArrayBuffer(f);
+  });
+
+  $('#lang').addEventListener('change', () => { if (STATE) run(); });
+  $('#depth').addEventListener('change', () => { if (STATE) run(); });
+  $('#mFrom').addEventListener('change', updateManual);
+  $('#mTo').addEventListener('change', updateManual);
+  $('#hexEnc').addEventListener('change', () => { if (STATE) renderHex(STATE.input, $('#hexEnc').value); });
+  $('#btnHexCopy').addEventListener('click', () => {
+    if (!STATE) return;
+    const b = encodeTo(STATE.input, $('#hexEnc').value).bytes;
+    copyText(Array.from(b).map(x => (x < 16 ? '0' : '') + x.toString(16).toUpperCase()).join(' '));
+  });
+  $('#btnCopy').addEventListener('click', () => {
+    if (STATE && STATE.best) copyText(STATE.best.text);
+    const b = $('#btnCopy'); const old = b.textContent; b.textContent = '已复制'; setTimeout(() => b.textContent = old, 1200);
+  });
+  $('#btnReport').addEventListener('click', () => {
+    if (!STATE) return;
+    download('mojibake-report.md', genReport(STATE.input, STATE.syms, STATE.results, STATE.lang, STATE.best), 'text/markdown;charset=utf-8');
+  });
+}
+
+bind();
+(function init(){
+  const samples = buildSamples();
+  const first = $('#samples button');
+  if (first) first.click();
+  else $('#out').hidden = true;
+  void samples;
+})();
+</script>
+</body>
+</html>
