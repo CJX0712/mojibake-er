@@ -1,5 +1,12 @@
 # 乱码急诊室 · Mojibake ER
 
+<p align="center">
+  <a href="https://github.com/CJX0712/mojibake-er/actions/workflows/ci.yml"><img src="https://github.com/CJX0712/mojibake-er/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
+  <a href="https://github.com/CJX0712/mojibake-er/releases"><img src="https://img.shields.io/github/v/release/CJX0712/mojibake-er?sort=semver" alt="release"></a>
+  <a href="https://github.com/CJX0712/mojibake-er/blob/main/LICENSE"><img src="https://img.shields.io/github/license/CJX0712/mojibake-er" alt="license"></a>
+  <img src="https://img.shields.io/badge/author-%E6%99%A8%E6%98%9F-1f6feb" alt="author">
+</p>
+
 把一段已经烂掉的乱码，反推回它本来应该是什么字。
 
 不是"猜编码"，是把乱码当成**案发现场**来查：先看症状，再枚举"它可能被怎么错读过一遍"，给出按可信度排序的若干套修复方案，并把每一步字节都摊开给你看。
